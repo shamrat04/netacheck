@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { app } from "./firebase"; // ✅ This ensures initializeApp() runs
-
+import { auth } from "./firebase";
+import { signInWithPhoneNumber, RecaptchaVerifier } from "firebase/auth"; // ✅ import RecaptchaVerifier correctly
 
 export default function LoginPage() {
   const [phone, setPhone] = useState("");
@@ -11,11 +11,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-  const setupRecaptcha = async () => {
     try {
-      const { getAuth, RecaptchaVerifier } = await import("firebase/auth");
-      const auth = getAuth();
-
       if (!window.recaptchaVerifier) {
         window.recaptchaVerifier = new RecaptchaVerifier(
           "recaptcha-container",
@@ -28,39 +24,32 @@ export default function LoginPage() {
           auth
         );
 
-        await window.recaptchaVerifier.render();
-        setRecaptchaReady(true);
-        console.log("✅ reCAPTCHA rendered");
+        window.recaptchaVerifier.render().then(() => {
+          setRecaptchaReady(true);
+          console.log("✅ reCAPTCHA rendered");
+        });
       }
     } catch (err) {
       console.error("❌ RecaptchaVerifier setup failed:", err);
     }
+  }, []);
+
+  const handleSendOtp = async () => {
+    if (!phone.startsWith("+")) {
+      alert("Use international format like +1XXXXXXXXXX");
+      return;
+    }
+
+    try {
+      const appVerifier = window.recaptchaVerifier;
+      const result = await signInWithPhoneNumber(auth, phone, appVerifier);
+      setConfirmation(result);
+      alert("OTP sent!");
+    } catch (error) {
+      console.error("❌ signInWithPhoneNumber FAILED:", error);
+      alert("Error sending OTP: " + error.message);
+    }
   };
-
-  setupRecaptcha();
-}, []);
-
-
- const handleSendOtp = async () => {
-  if (!phone.startsWith("+")) {
-    alert("Enter phone number in international format (e.g., +1...)");
-    return;
-  }
-
-  try {
-    const { getAuth, signInWithPhoneNumber } = await import("firebase/auth");
-    const auth = getAuth();
-    const appVerifier = window.recaptchaVerifier;
-
-    const result = await signInWithPhoneNumber(auth, phone, appVerifier);
-    setConfirmation(result);
-    alert("OTP sent!");
-  } catch (error) {
-    console.error("❌ signInWithPhoneNumber FAILED:", error);
-    alert("Error sending OTP: " + error.message);
-  }
-};
-
 
   const handleVerifyOtp = async () => {
     if (!confirmation) {
