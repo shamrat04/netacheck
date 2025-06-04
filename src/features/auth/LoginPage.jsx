@@ -1,7 +1,6 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "./firebase";
-import { signInWithPhoneNumber, RecaptchaVerifier } from "firebase/auth"; // ✅ import RecaptchaVerifier correctly
+import { auth, RecaptchaVerifier, signInWithPhoneNumber } from "./firebase";
 
 export default function LoginPage() {
   const [phone, setPhone] = useState("");
@@ -11,32 +10,32 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    try {
-      if (!window.recaptchaVerifier) {
+    if (!window.recaptchaVerifier) {
+      try {
         window.recaptchaVerifier = new RecaptchaVerifier(
           "recaptcha-container",
           {
             size: "invisible",
             callback: (response) => {
-              console.log("✅ reCAPTCHA solved:", response);
+              console.log("✅ reCAPTCHA solved", response);
             },
           },
           auth
         );
 
         window.recaptchaVerifier.render().then(() => {
-          setRecaptchaReady(true);
           console.log("✅ reCAPTCHA rendered");
+          setRecaptchaReady(true);
         });
+      } catch (err) {
+        console.error("❌ RecaptchaVerifier setup failed:", err);
       }
-    } catch (err) {
-      console.error("❌ RecaptchaVerifier setup failed:", err);
     }
   }, []);
 
   const handleSendOtp = async () => {
     if (!phone.startsWith("+")) {
-      alert("Use international format like +1XXXXXXXXXX");
+      alert("Phone number must start with +");
       return;
     }
 
@@ -77,7 +76,6 @@ export default function LoginPage() {
         placeholder="+1XXXXXXXXXX"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
-        style={{ marginBottom: 10 }}
       />
       <br />
       <button onClick={handleSendOtp} disabled={!recaptchaReady}>
