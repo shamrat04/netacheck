@@ -1,16 +1,17 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, RecaptchaVerifier } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyASl5rMwYdTVFFMf2Tvgy53ob4Zcw3czgI",
   authDomain: "netacheck-d4265.firebaseapp.com",
   projectId: "netacheck-d4265",
-  storageBucket: "netacheck-d4265.firebasestorage.app",
+  storageBucket: "netacheck-d4265.appspot.com", // ✅ Correct format
   messagingSenderId: "1061025694641",
   appId: "1:1061025694641:web:077c88add93f73b403f390"
 };
 
+// Prevent re-initialization during hot reload
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-export { auth };
+export { auth, RecaptchaVerifier }; // ✅ this line was missing!

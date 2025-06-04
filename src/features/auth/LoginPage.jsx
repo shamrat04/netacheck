@@ -1,67 +1,65 @@
-// src/LoginPage.jsx
-import { useState, useEffect } from "react";
-import { auth } from "./firebase";
-import { signInWithPhoneNumber, RecaptchaVerifier } from "firebase/auth";
+import { useState } from "react";
+import { auth, RecaptchaVerifier } from "./firebase";
+import { signInWithPhoneNumber } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [confirmation, setConfirmation] = useState(null);
-  const [recaptchaReady, setRecaptchaReady] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        "recaptcha-container",
-        {
-          size: "invisible",
-          callback: (response) => {
-            console.log("reCAPTCHA solved:", response);
-          },
-          "expired-callback": () => {
-            console.warn("reCAPTCHA expired. Resetting...");
-            window.recaptchaVerifier.render().then((widgetId) => {
-              grecaptcha.reset(widgetId);
-            });
-          }
-        },
-        auth
-      );
+  const setupRecaptcha = () => {
+    return new Promise((resolve, reject) => {
+      if (!window.recaptchaVerifier) {
+        try {
+          const verifier = new RecaptchaVerifier(
+            "recaptcha-container",
+            {
+              size: "invisible",
+              callback: (response) => {
+                console.log("✅ reCAPTCHA solved:", response);
+              },
+            },
+            auth
+          );
 
-      window.recaptchaVerifier.render().then(() => {
-        setRecaptchaReady(true);
-        console.log("reCAPTCHA rendered");
-      });
-    }
-  }, []);
+          verifier.render().then((widgetId) => {
+            window.recaptchaVerifier = verifier;
+            console.log("✅ reCAPTCHA rendered:", widgetId);
+            resolve(verifier);
+          });
+        } catch (err) {
+          console.error("❌ RecaptchaVerifier FAILED:", err);
+          alert("reCAPTCHA failed to load. Please reload the page.");
+          reject(err);
+        }
+      } else {
+        resolve(window.recaptchaVerifier);
+      }
+    });
+  };
 
   const handleSendOtp = async () => {
-    if (!phone.startsWith("+") || phone.length < 10) {
-      alert("Enter a valid phone number with country code, e.g., +1234567890");
-      return;
-    }
-
-    if (!recaptchaReady) {
-      alert("reCAPTCHA is not ready yet. Please wait a moment and try again.");
+    if (!phone.startsWith("+")) {
+      alert("Enter phone in international format. E.g., +1XXXXXXXXXX");
       return;
     }
 
     try {
-      const appVerifier = window.recaptchaVerifier;
-      const confirmationResult = await signInWithPhoneNumber(auth, phone, appVerifier);
-      setConfirmation(confirmationResult);
-      alert("OTP sent!");
+      const appVerifier = await setupRecaptcha();
+      const result = await signInWithPhoneNumber(auth, phone, appVerifier);
+      setConfirmation(result);
+      alert("OTP sent to " + phone);
     } catch (error) {
-      console.error("Error during signInWithPhoneNumber:", error);
-      alert("Failed to send OTP. Please try again.");
+      console.error("❌ signInWithPhoneNumber FAILED:", error);
+      alert("Error sending OTP: " + error.message);
     }
   };
 
   const handleVerifyOtp = async () => {
     if (!confirmation) {
-      alert("Please request an OTP first.");
+      alert("First request an OTP.");
       return;
     }
 
@@ -69,28 +67,27 @@ export default function LoginPage() {
       const result = await confirmation.confirm(otp);
       const token = await result.user.getIdToken();
       localStorage.setItem("token", token);
-      alert("Logged in successfully!");
+      alert("✅ Logged in!");
       navigate("/dashboard");
     } catch (error) {
-      console.error("Error during OTP verification:", error);
-      alert("Invalid OTP. Please try again.");
+      console.error("❌ OTP Verification Failed:", error);
+      alert("Invalid OTP. Try again.");
     }
   };
 
   return (
     <div style={{ padding: 20 }}>
       <h2>Login with Phone Number</h2>
+
       <input
         type="text"
-        placeholder="+1234567890"
+        placeholder="+1XXXXXXXXXX"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
         style={{ marginBottom: 10 }}
       />
       <br />
-      <button onClick={handleSendOtp} disabled={!recaptchaReady}>
-        Send OTP
-      </button>
+      <button onClick={handleSendOtp}>Send OTP</button>
 
       <div style={{ marginTop: 20 }}>
         <input
