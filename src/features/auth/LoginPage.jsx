@@ -1,7 +1,4 @@
-// src/features/auth/LoginPage.jsx
 import { useState, useEffect } from "react";
-import { auth } from "./firebase";
-import { signInWithPhoneNumber } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
@@ -12,10 +9,12 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const setupRecaptcha = async () => {
-      try {
-        const { RecaptchaVerifier } = await import("firebase/auth");
+  const setupRecaptcha = async () => {
+    try {
+      const { getAuth, RecaptchaVerifier } = await import("firebase/auth");
+      const auth = getAuth();
 
+      if (!window.recaptchaVerifier) {
         window.recaptchaVerifier = new RecaptchaVerifier(
           "recaptcha-container",
           {
@@ -30,34 +29,36 @@ export default function LoginPage() {
         await window.recaptchaVerifier.render();
         setRecaptchaReady(true);
         console.log("✅ reCAPTCHA rendered");
-      } catch (err) {
-        console.error("❌ RecaptchaVerifier setup failed:", err);
       }
-    };
-
-    setupRecaptcha();
-  }, []);
-
-  const handleSendOtp = async () => {
-    if (!phone.startsWith("+")) {
-      alert("Enter phone number in international format (e.g., +1...)");
-      return;
-    }
-
-    if (!window.recaptchaVerifier) {
-      alert("reCAPTCHA is not ready yet. Please wait a moment.");
-      return;
-    }
-
-    try {
-      const result = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
-      setConfirmation(result);
-      alert("OTP sent!");
-    } catch (error) {
-      console.error("❌ signInWithPhoneNumber FAILED:", error);
-      alert("Error sending OTP: " + error.message);
+    } catch (err) {
+      console.error("❌ RecaptchaVerifier setup failed:", err);
     }
   };
+
+  setupRecaptcha();
+}, []);
+
+
+ const handleSendOtp = async () => {
+  if (!phone.startsWith("+")) {
+    alert("Enter phone number in international format (e.g., +1...)");
+    return;
+  }
+
+  try {
+    const { getAuth, signInWithPhoneNumber } = await import("firebase/auth");
+    const auth = getAuth();
+    const appVerifier = window.recaptchaVerifier;
+
+    const result = await signInWithPhoneNumber(auth, phone, appVerifier);
+    setConfirmation(result);
+    alert("OTP sent!");
+  } catch (error) {
+    console.error("❌ signInWithPhoneNumber FAILED:", error);
+    alert("Error sending OTP: " + error.message);
+  }
+};
+
 
   const handleVerifyOtp = async () => {
     if (!confirmation) {
