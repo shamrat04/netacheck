@@ -11,24 +11,30 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        "recaptcha-container",
-        {
-          size: "invisible",
-          callback: (response) => {
-            console.log("✅ reCAPTCHA solved:", response);
-          },
-        },
-        auth
-      );
+    if (typeof window !== "undefined" && auth) {
+      try {
+        if (!window.recaptchaVerifier) {
+          window.recaptchaVerifier = new RecaptchaVerifier(
+            "recaptcha-container",
+            {
+              size: "invisible",
+              callback: (response) => {
+                console.log("✅ reCAPTCHA solved:", response);
+              },
+            },
+            auth
+          );
 
-      window.recaptchaVerifier.render().then(() => {
-        console.log("✅ reCAPTCHA rendered");
-        setRecaptchaReady(true);
-      }).catch((err) => {
-        console.error("❌ reCAPTCHA render failed:", err);
-      });
+          window.recaptchaVerifier.render().then(() => {
+            console.log("✅ reCAPTCHA rendered");
+            setRecaptchaReady(true);
+          }).catch((err) => {
+            console.error("❌ reCAPTCHA render failed:", err);
+          });
+        }
+      } catch (err) {
+        console.error("❌ RecaptchaVerifier setup failed:", err);
+      }
     }
   }, []);
 
