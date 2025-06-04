@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+// src/features/auth/LoginPage.jsx
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "./firebase";
 import { signInWithPhoneNumber, RecaptchaVerifier } from "firebase/auth";
@@ -11,37 +12,32 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-  const setupRecaptcha = async () => {
-    try {
-      // Wait one tick to ensure auth.app is fully initialized
-      await new Promise((res) => setTimeout(res, 0));
-
-      if (!window.recaptchaVerifier && auth?.app) {
-        window.recaptchaVerifier = new RecaptchaVerifier(
-          "recaptcha-container",
-          {
-            size: "invisible",
-            callback: (response) => {
-              console.log("✅ reCAPTCHA solved:", response);
+    const setupRecaptcha = () => {
+      if (typeof window !== "undefined" && auth?.app && !window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier = new RecaptchaVerifier(
+            "recaptcha-container",
+            {
+              size: "invisible",
+              callback: (response) => {
+                console.log("✅ reCAPTCHA solved:", response);
+              },
             },
-          },
-          auth
-        );
+            auth
+          );
 
-        await window.recaptchaVerifier.render();
-        console.log("✅ reCAPTCHA rendered");
-        setRecaptchaReady(true);
+          window.recaptchaVerifier.render().then(() => {
+            console.log("✅ reCAPTCHA rendered");
+            setRecaptchaReady(true);
+          });
+        } catch (err) {
+          console.error("❌ RecaptchaVerifier setup failed:", err);
+        }
       }
-    } catch (err) {
-      console.error("❌ RecaptchaVerifier setup failed:", err);
-    }
-  };
+    };
 
-  if (typeof window !== "undefined") {
     setupRecaptcha();
-  }
-}, []);
-
+  }, []);
 
   const handleSendOtp = async () => {
     if (!phone.startsWith("+")) {
