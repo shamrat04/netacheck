@@ -10,34 +10,33 @@ export default function LoginPage() {
   const [confirmation, setConfirmation] = useState(null);
   const [recaptchaReady, setRecaptchaReady] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const setupRecaptcha = () => {
-      if (typeof window !== "undefined" && auth?.app && !window.recaptchaVerifier) {
-        try {
-          window.recaptchaVerifier = new RecaptchaVerifier(
-            "recaptcha-container",
-            {
-              size: "invisible",
-              callback: (response) => {
-                console.log("✅ reCAPTCHA solved:", response);
-              },
+useEffect(() => {
+  const setupRecaptcha = () => {
+    if (typeof window !== "undefined" && !window.recaptchaVerifier) {
+      try {
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          "recaptcha-container",
+          {
+            size: "invisible",
+            callback: (response) => {
+              console.log("✅ reCAPTCHA solved:", response);
             },
-            auth
-          );
+          },
+          auth
+        );
 
-          window.recaptchaVerifier.render().then(() => {
-            console.log("✅ reCAPTCHA rendered");
-            setRecaptchaReady(true);
-          });
-        } catch (err) {
-          console.error("❌ RecaptchaVerifier setup failed:", err);
-        }
+        window.recaptchaVerifier.render().then(() => {
+          console.log("✅ reCAPTCHA rendered");
+          setRecaptchaReady(true);
+        });
+      } catch (err) {
+        console.error("❌ RecaptchaVerifier setup failed:", err);
       }
-    };
+    }
+  };
 
-    setupRecaptcha();
-  }, []);
+  setupRecaptcha();
+}, []);
 
   const handleSendOtp = async () => {
     if (!phone.startsWith("+")) {
