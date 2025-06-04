@@ -12,31 +12,29 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!window.recaptchaVerifier) {
-      try {
-        window.recaptchaVerifier = new RecaptchaVerifier(
-          "recaptcha-container",
-          {
-            size: "invisible",
-            callback: (response) => {
-              console.log("✅ reCAPTCHA solved:", response);
-            },
+      window.recaptchaVerifier = new RecaptchaVerifier(
+        "recaptcha-container",
+        {
+          size: "invisible",
+          callback: (response) => {
+            console.log("✅ reCAPTCHA solved:", response);
           },
-          auth
-        );
+        },
+        auth
+      );
 
-        window.recaptchaVerifier.render().then(() => {
-          console.log("✅ reCAPTCHA rendered");
-          setRecaptchaReady(true);
-        });
-      } catch (err) {
-        console.error("❌ RecaptchaVerifier setup failed:", err);
-      }
+      window.recaptchaVerifier.render().then(() => {
+        console.log("✅ reCAPTCHA rendered");
+        setRecaptchaReady(true);
+      }).catch((err) => {
+        console.error("❌ reCAPTCHA render failed:", err);
+      });
     }
   }, []);
 
   const handleSendOtp = async () => {
     if (!phone.startsWith("+")) {
-      alert("Use international format (e.g. +1...)");
+      alert("Enter phone number in international format (e.g., +1...)");
       return;
     }
 
@@ -45,9 +43,9 @@ export default function LoginPage() {
       const result = await signInWithPhoneNumber(auth, phone, appVerifier);
       setConfirmation(result);
       alert("OTP sent!");
-    } catch (err) {
-      console.error("❌ signInWithPhoneNumber FAILED:", err);
-      alert("Error sending OTP: " + err.message);
+    } catch (error) {
+      console.error("❌ signInWithPhoneNumber FAILED:", error);
+      alert("Error sending OTP: " + error.message);
     }
   };
 
@@ -63,8 +61,8 @@ export default function LoginPage() {
       localStorage.setItem("token", token);
       alert("✅ Logged in!");
       navigate("/dashboard");
-    } catch (err) {
-      console.error("❌ OTP Verification Failed:", err);
+    } catch (error) {
+      console.error("❌ OTP Verification Failed:", error);
       alert("Invalid OTP. Try again.");
     }
   };
@@ -72,12 +70,12 @@ export default function LoginPage() {
   return (
     <div style={{ padding: 20 }}>
       <h2>Login with Phone Number</h2>
-
       <input
         type="text"
         placeholder="+1XXXXXXXXXX"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
+        style={{ marginBottom: 10 }}
       />
       <br />
       <button onClick={handleSendOtp} disabled={!recaptchaReady}>
