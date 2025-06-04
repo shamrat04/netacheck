@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { auth, RecaptchaVerifier } from "./firebase";
+// src/features/auth/LoginPage.jsx
+import { useState, useEffect } from "react";
+import { auth } from "./firebase";
 import { signInWithPhoneNumber } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 
@@ -7,50 +8,51 @@ export default function LoginPage() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [confirmation, setConfirmation] = useState(null);
+  const [recaptchaReady, setRecaptchaReady] = useState(false);
   const navigate = useNavigate();
 
-  const setupRecaptcha = () => {
-    return new Promise((resolve, reject) => {
-      if (!window.recaptchaVerifier) {
-        try {
-          const verifier = new RecaptchaVerifier(
-            "recaptcha-container",
-            {
-              size: "invisible",
-              callback: (response) => {
-                console.log("✅ reCAPTCHA solved:", response);
-              },
-            },
-            auth
-          );
+  useEffect(() => {
+    const setupRecaptcha = async () => {
+      try {
+        const { RecaptchaVerifier } = await import("firebase/auth");
 
-          verifier.render().then((widgetId) => {
-            window.recaptchaVerifier = verifier;
-            console.log("✅ reCAPTCHA rendered:", widgetId);
-            resolve(verifier);
-          });
-        } catch (err) {
-          console.error("❌ RecaptchaVerifier FAILED:", err);
-          alert("reCAPTCHA failed to load. Please reload the page.");
-          reject(err);
-        }
-      } else {
-        resolve(window.recaptchaVerifier);
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          "recaptcha-container",
+          {
+            size: "invisible",
+            callback: (response) => {
+              console.log("✅ reCAPTCHA solved:", response);
+            },
+          },
+          auth
+        );
+
+        await window.recaptchaVerifier.render();
+        setRecaptchaReady(true);
+        console.log("✅ reCAPTCHA rendered");
+      } catch (err) {
+        console.error("❌ RecaptchaVerifier setup failed:", err);
       }
-    });
-  };
+    };
+
+    setupRecaptcha();
+  }, []);
 
   const handleSendOtp = async () => {
     if (!phone.startsWith("+")) {
-      alert("Enter phone in international format. E.g., +1XXXXXXXXXX");
+      alert("Enter phone number in international format (e.g., +1...)");
+      return;
+    }
+
+    if (!window.recaptchaVerifier) {
+      alert("reCAPTCHA is not ready yet. Please wait a moment.");
       return;
     }
 
     try {
-      const appVerifier = await setupRecaptcha();
-      const result = await signInWithPhoneNumber(auth, phone, appVerifier);
+      const result = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier);
       setConfirmation(result);
-      alert("OTP sent to " + phone);
+      alert("OTP sent!");
     } catch (error) {
       console.error("❌ signInWithPhoneNumber FAILED:", error);
       alert("Error sending OTP: " + error.message);
@@ -59,7 +61,7 @@ export default function LoginPage() {
 
   const handleVerifyOtp = async () => {
     if (!confirmation) {
-      alert("First request an OTP.");
+      alert("Please request an OTP first.");
       return;
     }
 
@@ -78,7 +80,6 @@ export default function LoginPage() {
   return (
     <div style={{ padding: 20 }}>
       <h2>Login with Phone Number</h2>
-
       <input
         type="text"
         placeholder="+1XXXXXXXXXX"
@@ -87,7 +88,9 @@ export default function LoginPage() {
         style={{ marginBottom: 10 }}
       />
       <br />
-      <button onClick={handleSendOtp}>Send OTP</button>
+      <button onClick={handleSendOtp} disabled={!recaptchaReady}>
+        Send OTP
+      </button>
 
       <div style={{ marginTop: 20 }}>
         <input
