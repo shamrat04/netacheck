@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { auth } from "./firebase";
 import { signInWithPhoneNumber } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
@@ -9,46 +9,40 @@ export default function LoginPage() {
   const [confirmation, setConfirmation] = useState(null);
   const navigate = useNavigate();
 
-  // ✅ Register RecaptchaVerifier ONCE when component loads
   useEffect(() => {
-    const loadRecaptcha = async () => {
-      try {
-        const { RecaptchaVerifier } = await import("firebase/auth");
+    const setupRecaptcha = async () => {
+      const { RecaptchaVerifier } = await import("firebase/auth");
 
+      try {
         if (!window.recaptchaVerifier) {
           window.recaptchaVerifier = new RecaptchaVerifier(
             "recaptcha-container",
             {
               size: "invisible",
               callback: (response) => {
-                console.log("✅ reCAPTCHA solved:", response);
+                console.log("✅ reCAPTCHA solved", response);
               },
             },
             auth
           );
 
           await window.recaptchaVerifier.render();
-          console.log("✅ reCAPTCHA initialized");
+          console.log("✅ reCAPTCHA rendered");
         }
       } catch (error) {
-        console.error("❌ RecaptchaVerifier FAILED:", error);
+        console.error("❌ RecaptchaVerifier setup failed:", error);
       }
     };
 
-    loadRecaptcha();
-  }, []); // ✅ empty dependency array = run only once
+    setupRecaptcha();
+  }, []);
 
   const handleSendOtp = async () => {
-    if (!phone.startsWith("+")) {
-      alert("Please enter the phone number in international format, e.g. +1XXXXXXXXXX");
-      return;
-    }
-
     try {
       const appVerifier = window.recaptchaVerifier;
       const result = await signInWithPhoneNumber(auth, phone, appVerifier);
       setConfirmation(result);
-      alert("OTP sent to " + phone);
+      alert("OTP sent!");
     } catch (error) {
       console.error("❌ signInWithPhoneNumber FAILED:", error);
       alert("Error sending OTP: " + error.message);
@@ -56,11 +50,6 @@ export default function LoginPage() {
   };
 
   const handleVerifyOtp = async () => {
-    if (!confirmation) {
-      alert("Please request an OTP first.");
-      return;
-    }
-
     try {
       const result = await confirmation.confirm(otp);
       const token = await result.user.getIdToken();
@@ -68,15 +57,14 @@ export default function LoginPage() {
       alert("Logged in!");
       navigate("/dashboard");
     } catch (error) {
-      console.error("❌ OTP Verification Failed:", error);
-      alert("Invalid OTP. Please try again.");
+      console.error("❌ OTP verification failed:", error);
+      alert("Invalid OTP");
     }
   };
 
   return (
     <div style={{ padding: 20 }}>
       <h2>Login with Phone Number</h2>
-
       <input
         type="text"
         placeholder="+1XXXXXXXXXX"

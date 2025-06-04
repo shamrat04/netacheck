@@ -7,7 +7,7 @@ const firebaseConfig = {
   projectId: "netacheck-d4265",
   storageBucket: "netacheck-d4265.appspot.com",
   messagingSenderId: "1061025694641",
-  appId: "1:1061025694641:web:cc74dfa5829160a503f390",
+  appId: "1:1061025694641:web:cc74dfa5829160a503f390"
 };
 
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
