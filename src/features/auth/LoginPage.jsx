@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth, RecaptchaVerifier, signInWithPhoneNumber } from "./firebase";
+import { auth } from "./firebase";
+import { signInWithPhoneNumber, RecaptchaVerifier } from "firebase/auth";
 
 export default function LoginPage() {
   const [phone, setPhone] = useState("");
@@ -17,7 +18,7 @@ export default function LoginPage() {
           {
             size: "invisible",
             callback: (response) => {
-              console.log("✅ reCAPTCHA solved", response);
+              console.log("✅ reCAPTCHA solved:", response);
             },
           },
           auth
@@ -35,7 +36,7 @@ export default function LoginPage() {
 
   const handleSendOtp = async () => {
     if (!phone.startsWith("+")) {
-      alert("Phone number must start with +");
+      alert("Use international format (e.g. +1...)");
       return;
     }
 
@@ -44,9 +45,9 @@ export default function LoginPage() {
       const result = await signInWithPhoneNumber(auth, phone, appVerifier);
       setConfirmation(result);
       alert("OTP sent!");
-    } catch (error) {
-      console.error("❌ signInWithPhoneNumber FAILED:", error);
-      alert("Error sending OTP: " + error.message);
+    } catch (err) {
+      console.error("❌ signInWithPhoneNumber FAILED:", err);
+      alert("Error sending OTP: " + err.message);
     }
   };
 
@@ -62,8 +63,8 @@ export default function LoginPage() {
       localStorage.setItem("token", token);
       alert("✅ Logged in!");
       navigate("/dashboard");
-    } catch (error) {
-      console.error("❌ OTP Verification Failed:", error);
+    } catch (err) {
+      console.error("❌ OTP Verification Failed:", err);
       alert("Invalid OTP. Try again.");
     }
   };
@@ -71,6 +72,7 @@ export default function LoginPage() {
   return (
     <div style={{ padding: 20 }}>
       <h2>Login with Phone Number</h2>
+
       <input
         type="text"
         placeholder="+1XXXXXXXXXX"

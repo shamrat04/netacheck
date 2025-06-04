@@ -1,6 +1,5 @@
-// src/features/auth/firebase.js
-import { initializeApp, getApps } from "firebase/app";
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyASl5rMwYdTVFFMf2Tvgy53ob4Zcw3czgI",
@@ -8,11 +7,10 @@ const firebaseConfig = {
   projectId: "netacheck-d4265",
   storageBucket: "netacheck-d4265.appspot.com",
   messagingSenderId: "1061025694641",
-  appId: "1:1061025694641:web:077c88add93f73b403f390"
+  appId: "1:1061025694641:web:cc74dfa5829160a503f390"
 };
 
-// ✅ Ensure no double-initialization
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-export { auth, RecaptchaVerifier, signInWithPhoneNumber };
+export { auth };
