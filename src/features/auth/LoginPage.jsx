@@ -1,7 +1,7 @@
-// src/features/auth/LoginPage.jsx
+// src/LoginPage.jsx
 import { useState, useEffect } from "react";
 import { auth } from "./firebase";
-import { signInWithPhoneNumber } from "firebase/auth";
+import { signInWithPhoneNumber, RecaptchaVerifier } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 
 export default function LoginPage() {
@@ -12,59 +12,56 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const setupRecaptcha = async () => {
-      try {
-        const { RecaptchaVerifier } = await import("firebase/auth");
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(
+        "recaptcha-container",
+        {
+          size: "invisible",
+          callback: (response) => {
+            console.log("reCAPTCHA solved:", response);
+          },
+          "expired-callback": () => {
+            console.warn("reCAPTCHA expired. Resetting...");
+            window.recaptchaVerifier.render().then((widgetId) => {
+              grecaptcha.reset(widgetId);
+            });
+          }
+        },
+        auth
+      );
 
-        if (!window.recaptchaVerifier) {
-          window.recaptchaVerifier = new RecaptchaVerifier(
-            "recaptcha-container",
-            {
-              size: "invisible",
-              callback: (response) => {
-                console.log("✅ reCAPTCHA solved", response);
-              },
-            },
-            auth
-          );
-
-          await window.recaptchaVerifier.render();
-          setRecaptchaReady(true);
-          console.log("✅ reCAPTCHA rendered and ready");
-        }
-      } catch (error) {
-        console.error("❌ Failed to initialize reCAPTCHA:", error);
-      }
-    };
-
-    setupRecaptcha();
+      window.recaptchaVerifier.render().then(() => {
+        setRecaptchaReady(true);
+        console.log("reCAPTCHA rendered");
+      });
+    }
   }, []);
 
   const handleSendOtp = async () => {
     if (!phone.startsWith("+") || phone.length < 10) {
-      alert("Enter valid phone number with country code, e.g., +1...");
+      alert("Enter a valid phone number with country code, e.g., +1234567890");
       return;
     }
 
     if (!recaptchaReady) {
-      alert("reCAPTCHA not ready yet. Please wait a second and try again.");
+      alert("reCAPTCHA is not ready yet. Please wait a moment and try again.");
       return;
     }
 
     try {
       const appVerifier = window.recaptchaVerifier;
-      const result = await signInWithPhoneNumber(auth, phone, appVerifier);
-      setConfirmation(result);
+      const confirmationResult = await signInWithPhoneNumber(auth, phone, appVerifier);
+      setConfirmation(confirmationResult);
       alert("OTP sent!");
     } catch (error) {
-      console.error("❌ signInWithPhoneNumber FAILED:", error);
-      alert("Error sending OTP: " + error.message);
+      console.error("Error during signInWithPhoneNumber:", error);
+      alert("Failed to send OTP. Please try again.");
     }
   };
 
   const handleVerifyOtp = async () => {
     if (!confirmation) {
-      alert("Request OTP first.");
+      alert("Please request an OTP first.");
       return;
     }
 
@@ -72,11 +69,11 @@ export default function LoginPage() {
       const result = await confirmation.confirm(otp);
       const token = await result.user.getIdToken();
       localStorage.setItem("token", token);
-      alert("Logged in!");
+      alert("Logged in successfully!");
       navigate("/dashboard");
     } catch (error) {
-      console.error("❌ OTP Verification Failed:", error);
-      alert("Invalid OTP. Try again.");
+      console.error("Error during OTP verification:", error);
+      alert("Invalid OTP. Please try again.");
     }
   };
 
@@ -85,7 +82,7 @@ export default function LoginPage() {
       <h2>Login with Phone Number</h2>
       <input
         type="text"
-        placeholder="+1XXXXXXXXXX"
+        placeholder="+1234567890"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
         style={{ marginBottom: 10 }}
