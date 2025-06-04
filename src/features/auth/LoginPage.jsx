@@ -38,16 +38,26 @@ export default function LoginPage() {
   }, []);
 
   const handleSendOtp = async () => {
-    try {
-      const appVerifier = window.recaptchaVerifier;
-      const result = await signInWithPhoneNumber(auth, phone, appVerifier);
-      setConfirmation(result);
-      alert("OTP sent!");
-    } catch (error) {
-      console.error("❌ signInWithPhoneNumber FAILED:", error);
-      alert("Error sending OTP: " + error.message);
-    }
-  };
+  if (!phone.startsWith("+") || phone.length < 10) {
+    alert("Please enter a valid phone number including country code (e.g., +1...)");
+    return;
+  }
+
+  if (!window.recaptchaVerifier) {
+    alert("reCAPTCHA not ready yet. Please wait a moment and try again.");
+    return;
+  }
+
+  try {
+    const appVerifier = window.recaptchaVerifier;
+    const result = await signInWithPhoneNumber(auth, phone, appVerifier);
+    setConfirmation(result);
+    alert("OTP sent!");
+  } catch (error) {
+    console.error("❌ signInWithPhoneNumber FAILED:", error);
+    alert("Error sending OTP: " + error.message);
+  }
+};
 
   const handleVerifyOtp = async () => {
     try {
