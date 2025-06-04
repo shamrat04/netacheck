@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { app } from "./firebase"; // ✅ This ensures initializeApp() runs
+
 
 export default function LoginPage() {
   const [phone, setPhone] = useState("");
