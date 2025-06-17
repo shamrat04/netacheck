@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signInWithPhoneNumber, RecaptchaVerifier } from "firebase/auth";
 import { auth } from "/src/features/auth/firebase";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +11,27 @@ export default function LoginPage() {
   const { setIsAuthenticated } = useAuth();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // ✅ Only initialize RecaptchaVerifier after window + auth are ready
+    if (typeof window !== "undefined" && auth && !window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(
+        "recaptcha-container",
+        {
+          size: "invisible",
+          callback: (response) => {
+            console.log("reCAPTCHA solved", response);
+          },
+        },
+        auth
+      );
+
+      // ✅ Explicit render to avoid lazy loading issues
+      window.recaptchaVerifier.render().catch((err) =>
+        console.error("reCAPTCHA render failed:", err)
+      );
+    }
+  }, []);
+
   const handleSendOtp = async () => {
     if (!phone.startsWith("+")) {
       alert("Enter phone like +1XXXXXXXXXX");
@@ -18,21 +39,6 @@ export default function LoginPage() {
     }
 
     try {
-      if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-  "recaptcha-container",
-  {
-    size: "normal", // 👈 instead of "invisible"
-    callback: (response) => {
-      console.log("reCAPTCHA passed", response);
-    },
-  },
-  auth
-);
-await window.recaptchaVerifier.render();
-
-      }
-
       const appVerifier = window.recaptchaVerifier;
       const confirmationResult = await signInWithPhoneNumber(auth, phone, appVerifier);
       setConfirmation(confirmationResult);
@@ -66,7 +72,10 @@ await window.recaptchaVerifier.render();
         className="border rounded p-2 w-full mb-4"
       />
 
-      <button onClick={handleSendOtp} className="bg-blue-500 text-white p-2 w-full mb-4 rounded">
+      <button
+        onClick={handleSendOtp}
+        className="bg-blue-500 text-white p-2 w-full mb-4 rounded"
+      >
         Send OTP
       </button>
 
@@ -79,7 +88,10 @@ await window.recaptchaVerifier.render();
             className="border rounded p-2 w-full mb-4"
           />
 
-          <button onClick={handleVerifyOtp} className="bg-green-500 text-white p-2 w-full rounded">
+          <button
+            onClick={handleVerifyOtp}
+            className="bg-green-500 text-white p-2 w-full rounded"
+          >
             Verify OTP
           </button>
         </>
