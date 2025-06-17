@@ -8,10 +8,10 @@ const firebaseConfig = {
   projectId: "netacheck-d4265",
   storageBucket: "netacheck-d4265.appspot.com",
   messagingSenderId: "1061025694641",
-  appId: "1:1061025694641:web:cc74dfa5829160a503f390"
+  appId: "1:1061025694641:web:077c88add93f73b403f390",
 };
 
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-export { app, auth };
+export { auth };

@@ -6,7 +6,9 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
 
 function App() {
+
   return (
+    
    <Router>
   <Routes>
     <Route path="/login" element={<LoginPage />} /> {/* changed from "/" to "/login" */}
